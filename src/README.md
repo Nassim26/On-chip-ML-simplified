@@ -207,4 +207,5 @@ On most modern PYNQ platforms, buffers allocated with pynq.allocate() are either
 If you are using a platform or memory configuration without PS–PL cache coherency, then:
 - Call input_buffer.flush() before a DMA read (PS → PL)
 - Call output_buffer.invalidate() after a DMA write (PL → PS)
+
 But I have not had to use either, ever. 
