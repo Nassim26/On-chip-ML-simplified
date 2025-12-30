@@ -180,7 +180,7 @@ def FPGA_conv(image_tensor, kernel_tensor):
 
     return out_buf.copy()
 ```
-This function is called in the `forward(...)` member function of a copy of the standard Conv2D class of PyTorch (conveniently titled FPGA_Conv2D), whilst preserving its `backward(...)` functionality. This effectively decouples the forward pass (now taking place in the PL) from the autograd backward pass, much like a surrogate gradient for quantized forward-passes or for SNNs would be implemented. This allows for seamless integration into PyTorch pipelines. 
+This function is called in the `forward(...)` member function of a copy of the standard Conv2D class of PyTorch (conveniently titled FPGA_Conv2D), whilst preserving its `backward(...)` functionality. This effectively decouples the forward pass (now taking place in the PL) from the autograd backward pass, much like a surrogate gradient for quantized forward-passes or for SNNs would be implemented. This allows for seamless integration into PyTorch pipelines. Note that the latency incurred by PS → PL → PS transfer promotes designs that transfer a lot of data in one go, as opposed to piecemeal approaches (e.g. recursively sending over one image from the batch). In theory, you could run a full DNN or several of its layers on the PL with a single call if you can distinguish between the intermediate layers' outputs by appropriately labeling/routing & buffering AXI streams, or by buffering chunks in PL-side memory (BRAMs). Of course, for inference-only architectures, intermediate outputs are generally not important and you can just discard them.
 
 ### Batch Parallelism via Memory Layout
 
@@ -200,8 +200,10 @@ Then:
 - You can configure each DMA beat to be 32 bits
 - PL receives concatenated {img1_px, img2_px, img3_px, img4_px} every cycle
 - Each byte can be routed to a separate accelerator instance
-- Which allows you to exploit spatial parallelism! 
+- Which allows you to exploit spatial parallelism!
 
+Note that the output adheres to the same memory-layout, if you want to appropriately format outputs from parallel accelerator-streams on the PS side.
+ f
 ### Cache coherency note
 On most modern PYNQ platforms, buffers allocated with pynq.allocate() are either non-cacheable or hardware-coherent, so explicit cache maintenance is not required.
 If you are using a platform or memory configuration without PS–PL cache coherency, then:
